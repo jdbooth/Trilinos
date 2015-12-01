@@ -244,7 +244,14 @@ struct ShyLUStackMap
   {
     A->fillComplete((dmap), (rmap));
   }
-  
+
+  inline
+  static
+  void ExtractView(VT *vec, ST** values, GT &lda)
+  {
+    //vec->ExtractView(values, &lda);
+  }
+
   
   inline
   static
@@ -352,7 +359,7 @@ struct ShyLUStackMap
   static
   void Import(VT *vec_target, VT &vec_source, IMPORT &importer)
   {
-    vec_target->doImport(vec_source, import, Tpetra::INSERT);
+    vec_target->doImport(vec_source, importer, Tpetra::INSERT);
   }
 
   inline
@@ -454,13 +461,6 @@ struct ShyLUStackMap <Epetra_CrsMatrix,Epetra_MultiVector>
   GT  NumGlobalRows(MT *A)
   {
     return A->NumGlobalRows();
-  }
-
-  inline
-  static
-  void ExtractView(VT *vec, ST** values, GT &lda)
-  {
-    Teuchos::RCP<const ST> getData(
   }
 
 

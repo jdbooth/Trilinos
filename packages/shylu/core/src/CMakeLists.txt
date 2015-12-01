@@ -50,13 +50,15 @@ APPEND_SET(HEADERS
   src/shylu_debug_manager.hpp
   src/Ifpack_ShyLU.h
   src/shylu_amesos_schur_operator.h
-  src/shylu_util.h
-  src/shylu_symbolic.h
-  src/shylu.h
+  src/shylu_util_decl.hpp
+  src/shylu_symbolic.hpp
+  src/shylu.hpp
+  src/shylu_factor.hpp
+  src/shylu_solve.hpp
   src/shylu_probing_operator.h
   src/shylu_local_schur_operator.h
-  src/shylu_internal.h
-  src/shylu_config.h
+  src/shylu_internal.hpp
+  src/shylu_config.hpp
   src/shylu_partition_interface.hpp
   src/shylu_partition_interface_def.hpp
   src/shylu_partition_interface_decl.hpp
@@ -69,14 +71,10 @@ APPEND_SET(HEADERS
 
 APPEND_SET(SOURCES
   src/IQRSolver.cpp
-  src/shylu_factor.cpp
   src/Ifpack_ShyLU.cpp
   src/shylu_amesos_schur_operator.cpp
   src/shylu_probing_operator.cpp
   src/shylu_local_schur_operator.cpp
-  src/shylu_util.cpp
-  src/shylu_solve.cpp
-  src/shylu_schur.cpp
   src/shylu_partition_interface.cpp
   src/shylu_directsolver_interface.cpp
   )
