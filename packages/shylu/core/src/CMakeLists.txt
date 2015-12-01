@@ -33,7 +33,7 @@ INCLUDE_DIRECTORIES(${PROJECT_SOURCE_DIR})
 #
 INCLUDE_DIRECTORIES(${CMAKE_CURRENT_BINARY_DIR})
 INCLUDE_DIRECTORIES(${CMAKE_CURRENT_SOURCE_DIR})
-INCLUDE_DIRECTORIES(${CMAKE_CURRENT_SOURCE_DIR}/epetra)
+INCLUDE_DIRECTORIES(${CMAKE_CURRENT_SOURCE_DIR}/src)
 INCLUDE_DIRECTORIES(${CMAKE_CURRENT_SOURCE_DIR}/interfaces)
 
 
@@ -44,41 +44,41 @@ APPEND_SET(HEADERS
 INCLUDE_DIRECTORIES(${CMAKE_CURRENT_SOURCE_DIR})
 
 APPEND_SET(HEADERS
-  epetra/shylu_internal_gmres.h
-  epetra/shylu_internal_gmres_tools.h
-  epetra/IQRSolver.h
-  epetra/shylu_debug_manager.hpp
-  epetra/Ifpack_ShyLU.h
-  epetra/shylu_amesos_schur_operator.h
-  epetra/shylu_util.h
-  epetra/shylu_symbolic.h
-  epetra/shylu.h
-  epetra/shylu_probing_operator.h
-  epetra/shylu_local_schur_operator.h
-  epetra/shylu_internal.h
-  epetra/shylu_config.h
-  epetra/shylu_partition_interface.hpp
-  epetra/shylu_partition_interface_def.hpp
-  epetra/shylu_partition_interface_decl.hpp
-  epetra/shylu_directsolver_interface.hpp
-  epetra/shylu_directsolver_interface_def.hpp
-  epetra/shylu_directsolver_interface_decl.hpp
+  src/shylu_internal_gmres.h
+  src/shylu_internal_gmres_tools.h
+  src/IQRSolver.h
+  src/shylu_debug_manager.hpp
+  src/Ifpack_ShyLU.h
+  src/shylu_amesos_schur_operator.h
+  src/shylu_util.h
+  src/shylu_symbolic.h
+  src/shylu.h
+  src/shylu_probing_operator.h
+  src/shylu_local_schur_operator.h
+  src/shylu_internal.h
+  src/shylu_config.h
+  src/shylu_partition_interface.hpp
+  src/shylu_partition_interface_def.hpp
+  src/shylu_partition_interface_decl.hpp
+  src/shylu_directsolver_interface.hpp
+  src/shylu_directsolver_interface_def.hpp
+  src/shylu_directsolver_interface_decl.hpp
   )
 
 # Set sources
 
 APPEND_SET(SOURCES
-  epetra/IQRSolver.cpp
-  epetra/shylu_factor.cpp
-  epetra/Ifpack_ShyLU.cpp
-  epetra/shylu_amesos_schur_operator.cpp
-  epetra/shylu_probing_operator.cpp
-  epetra/shylu_local_schur_operator.cpp
-  epetra/shylu_util.cpp
-  epetra/shylu_solve.cpp
-  epetra/shylu_schur.cpp
-  epetra/shylu_partition_interface.cpp
-  epetra/shylu_directsolver_interface.cpp
+  src/IQRSolver.cpp
+  src/shylu_factor.cpp
+  src/Ifpack_ShyLU.cpp
+  src/shylu_amesos_schur_operator.cpp
+  src/shylu_probing_operator.cpp
+  src/shylu_local_schur_operator.cpp
+  src/shylu_util.cpp
+  src/shylu_solve.cpp
+  src/shylu_schur.cpp
+  src/shylu_partition_interface.cpp
+  src/shylu_directsolver_interface.cpp
   )
 
 TRIBITS_ADD_LIBRARY(shylu

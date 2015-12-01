@@ -41,9 +41,13 @@
 //@HEADER
 
 
-#include "shylu.h"
-#include "shylu_util.h"
+#include "shylu.hpp"
+//#include "shylu_util.h"
+#include "shylu_util_decl.hpp"
 //#include "EpetraExt_Transpose_RowMatrix.h"
+
+#include "shylu_type_map.hpp"
+
 #include "Epetra_Vector.h"
 #include "shylu_probing_operator.h"
 #include "shylu_local_schur_operator.h"
@@ -53,12 +57,30 @@
    entries using a relative threshold. Assemble the result in a Crs Matrix
    which will be our approximate Schur complement.
    */
-Teuchos::RCP<Epetra_CrsMatrix> computeApproxSchur(shylu_config *config,
-    shylu_symbolic *sym,
-    Epetra_CrsMatrix *G, Epetra_CrsMatrix *R,
-    Epetra_LinearProblem *LP, Amesos_BaseSolver *solver,
-    Ifpack_Preconditioner *ifSolver, Epetra_CrsMatrix *C,
-    Epetra_Map *localDRowMap)
+
+template <class Matrix, class Vector>
+Teuchos::RCP<Matrix> computeApproxSchur
+(
+ shylu_config<Matrix,Vector> *config,
+ shylu_symbolic<Matrix,Vector> *sym,
+ Matrix *G, Matrix *R,
+ Epetra_LinearProblem *LP, Amesos_BaseSolver *solver,
+ Ifpack_Preconditioner *ifSolver, Matrix *C,
+ typename ShyLUStackMap<Matrix,Vector>::MAP *localDRowMap
+ )
+{
+  return NULL;
+}
+
+template <>
+Teuchos::RCP<Epetra_CrsMatrix> computeApproxSchur<Epetra_CrsMatrix,Epetra_MultiVector>
+(
+ shylu_config<Epetra_CrsMatrix,Epetra_MultiVector> *config,
+ shylu_symbolic<Epetra_CrsMatrix,Epetra_MultiVector> *sym,
+ Epetra_CrsMatrix *G, Epetra_CrsMatrix *R,
+ Epetra_LinearProblem *LP, Amesos_BaseSolver *solver,
+ Ifpack_Preconditioner *ifSolver, Epetra_CrsMatrix *C,
+ Epetra_Map *localDRowMap)
 {
     double relative_thres = config->relative_threshold;
     int nvectors = 16;
@@ -246,12 +268,32 @@ Teuchos::RCP<Epetra_CrsMatrix> computeApproxSchur(shylu_config *config,
 }
 
 /* Computes the approximate Schur complement for the wide separator */
-Teuchos::RCP<Epetra_CrsMatrix> computeApproxWideSchur(shylu_config *config,
-    shylu_symbolic *ssym,   // symbolic structure
+
+template <class Matrix, class Vector>
+Teuchos::RCP<Matrix> computeApproxWideSchur
+(
+ shylu_config<Matrix,Vector> *config,
+ shylu_symbolic<Matrix,Vector> *ssym,   // symbolic structure
+ Matrix *G, Matrix *R,
+ Epetra_LinearProblem *LP, Amesos_BaseSolver *solver,
+ Ifpack_Preconditioner *ifSolver, Matrix *C,
+ typename ShyLUStackMap<Matrix,Vector>::MAP *localDRowMap
+)
+{
+
+
+}
+
+template <>
+Teuchos::RCP<Epetra_CrsMatrix> computeApproxWideSchur<Epetra_CrsMatrix, Epetra_MultiVector>
+(
+shylu_config<Epetra_CrsMatrix,Epetra_MultiVector> *config,
+    shylu_symbolic<Epetra_CrsMatrix,Epetra_MultiVector> *ssym,   // symbolic structure
     Epetra_CrsMatrix *G, Epetra_CrsMatrix *R,
     Epetra_LinearProblem *LP, Amesos_BaseSolver *solver,
     Ifpack_Preconditioner *ifSolver, Epetra_CrsMatrix *C,
-    Epetra_Map *localDRowMap)
+    Epetra_Map *localDRowMap
+)
 {
     int i;
     double relative_thres = config->relative_threshold;
@@ -530,11 +572,27 @@ Teuchos::RCP<Epetra_CrsMatrix> computeApproxWideSchur(shylu_config *config,
 
 /* Computes the approximate Schur complement for the wide separator
    using guided probing*/
-Teuchos::RCP<Epetra_CrsMatrix> computeSchur_GuidedProbing
+
+template <class Matrix, class Vector>
+Teuchos::RCP<Matrix> 
+computeSchur_GuidedProbing
 (
-    shylu_config *config,
-    shylu_symbolic *ssym,   // symbolic structure
-    shylu_data *data,       // numeric structure
+ shylu_config<Matrix,Vector> *config,
+ shylu_symbolic<Matrix,Vector> *ssym,   // symbolic structure
+ shylu_data<Matrix,Vector> *data,       // numeric structure
+ typename ShyLUStackMap<Matrix,Vector>::MAP *localDRowMap
+)
+{
+  return NULL;
+}
+
+template <>
+Teuchos::RCP<Epetra_CrsMatrix> 
+computeSchur_GuidedProbing<Epetra_CrsMatrix, Epetra_MultiVector>
+(
+    shylu_config<Epetra_CrsMatrix,Epetra_MultiVector> *config,
+    shylu_symbolic<Epetra_CrsMatrix,Epetra_MultiVector> *ssym,   // symbolic structure
+    shylu_data<Epetra_CrsMatrix,Epetra_MultiVector> *data,       // numeric structure
     Epetra_Map *localDRowMap
 )
 {

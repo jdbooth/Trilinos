@@ -40,86 +40,27 @@
 // ************************************************************************
 //@HEADER
 
-/** \file shylu_util.h
+/* Internal functions in shylu */
+#ifndef SHYLU_INTERNAL_HPP
+#define SHYLU_INTERNAL_HPP
 
-    \brief Utilities for ShyLU
+int create_matrices
+(
+    Epetra_CrsMatrix *A,    // i/p: A matrix
+    shylu_symbolic *ssym,   // symbolic structure
+    shylu_data *data,       // numeric structure, TODO: Required ?
+    shylu_config *config    // i/p: library configuration
+);
 
-    \author Siva Rajamanickam
+int extract_matrices
+(
+    Epetra_CrsMatrix *A,    // i/p: A matrix
+    shylu_symbolic *ssym,   // symbolic structure
+    shylu_data *data,       // numeric structure, TODO: Required ?
+    shylu_config *config,   // i/p: library configuration
+    bool insertValues       // true if we need to insert the values into the
+                            // matrices, false if fillComplete is already called
+                            // and we need to replace the local values
+);
 
-*/
-#ifndef SHYLU_UTIL_H
-#define SHYLU_UTIL_H
-
-#include <assert.h>
-#include <mpi.h>
-#include <iostream>
-#include <sstream>
-
-// To dump all the matrices into files.
-//#define DUMP_MATRICES
-
-//#define TIMING_OUTPUT
-//
-#include "ShyLUCore_config.h"
-
-// Epetra includes
-#ifdef HAVE_SHYLUCORE_MPI
-#include "Epetra_MpiComm.h"
-#else
-#include "Epetra_SerialComm.h"
-#endif
-#include "Epetra_SerialComm.h"
-#include "Epetra_Time.h"
-#include "Epetra_CrsMatrix.h"
-#include "Epetra_Map.h"
-#include "Epetra_MultiVector.h"
-#include "Epetra_LinearProblem.h"
-#include "Epetra_Import.h"
-#include "Epetra_Export.h"
-
-// Teuchos includes
-#include "Teuchos_GlobalMPISession.hpp"
-#include "Teuchos_XMLParameterListHelpers.hpp"
-#include "Teuchos_LAPACK.hpp"
-#include "Teuchos_Time.hpp"
-
-// EpetraExt includes
-#include "EpetraExt_RowMatrixOut.h"
-#include "EpetraExt_MultiVectorOut.h"
-#include "EpetraExt_CrsMatrixIn.h"
-
-// Amesos includes
-#include "Amesos.h"
-#include "Amesos_BaseSolver.h"
-
-// AztecOO includes
-#include "AztecOO.h"
-
-#include "Isorropia_EpetraProber.hpp"
-
-using namespace std;
-
-Epetra_CrsMatrix* balanceAndRedistribute(Epetra_CrsMatrix* A, 
-                        Teuchos::ParameterList isoList);
-
-void checkMaps(Epetra_CrsMatrix *A);
-
-void findLocalColumns(Epetra_CrsMatrix *A, int *gvals, int &SNumGlobalCols);
-
-void findNarrowSeparator(Epetra_CrsMatrix *A, int *gvals);
-
-void findBlockElems(Epetra_CrsMatrix *A, int nrows, int *rows, int *gvals,
-        int Lnr, int *LeftElems,
-        int Rnr, int *RightElems, string s1, string s2, bool cols);
-
-#ifdef SHYLU_DEBUG
-
-#define ASSERT(A) assert(A)
-
-#else
-
-#define ASSERT(A)
-
-#endif
-
-#endif //SHYLU_UTIL_H
+#endif //SHYLU_INTERNAL_HPP

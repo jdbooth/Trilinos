@@ -48,15 +48,287 @@
 
 */
 
-#include "shylu_util.h"
-#include "shylu.h"
+//#include "shylu_util.h"
+#include "shylu_util_decl.hpp"
+#include "shylu.hpp"
 
+
+//#ifdef HAVE_SHYLUCORE_IFPACK
 #include <Ifpack.h>
+//#endif
 
-static int shylu_dist_solve(
-    shylu_symbolic *ssym,
-    shylu_data *data,
-    shylu_config *config,
+
+/*----------------shylu_dist_solve----------------*/
+
+
+template <class Matrix, class Vector>
+int shylu_dist_solve
+(
+ shylu_symbolic<Matrix,Vector> *ssym, 
+ shylu_data<Matrix,Vector> *data, 
+ shylu_config<Matrix,Vector> *config,
+ const Vector& X, 
+ Vector& Y
+)
+{
+
+  typedef ShyLUStackMap<Matrix,Vector>    slu_map;
+  typedef typename slu_map::GT            GT;
+  typedef typename slu_map::LT            LT;
+  typedef typename slu_map::ST            ST;
+  typedef typename slu_map::GT_ARRAY      GT_ARRAY;
+  typedef typename slu_map::LT_ARRAY      LT_ARRAY;
+  typedef typename slu_map::ST_ARRAY      ST_ARRAY;
+  typedef typename slu_map::MAP           MAP;
+  typedef typename slu_map::MAP_TYPE      MAP_TYPE;
+  typedef typename slu_map::GRAPH         GRAPH;
+  typedef typename slu_map::COMM          COMM;
+
+  int err;
+  AztecOO *solver = 0;
+
+
+  //Do we need this assert, when would it go wrong
+  //assert(X.Map().SameAs(Y.Map()));
+ 
+
+  Vector *newX;
+  //const Epetra_MultiVector *newX;
+ 
+  newX = &X;
+  
+  LT nvectors = NumVector(newX);
+  //int nvectors = newX->NumVectors();
+  
+  // May have to use importer/exporter
+  MAP_TYPE BsMap = slu_map::NewMap(-1,data->Dnr, data->DRowElems,
+                                   0, slu_map::GetComm(X));
+  //Epetra_Map BsMap(-1, data->Snr, data->SRowElems, 0, X.Comm());
+  MAP_TYPE BdMap = slu_map::NewMap(-1, data->Dnr, data->DRowElems, 
+                                   0, slu_map::GetComm(X));
+  //Epetra_Map BdMap(-1, data->Dnr, data->DRowElems, 0, X.Comm());
+  
+  Vector *Bs = slu_map::NewVector(BsMap, nvectors);
+  //Epetra_MultiVector Bs(BsMap, nvectors);
+  IMPORT *BsImporter = slu_map::NewImport(BsMap, slu_map::Map(newX));
+  //Epetra_Import BsImporter(BsMap, newX->Map());
+  
+  //Do we need these check.... is there a better way 
+  //Maybe in the debug class?
+  //assert(BsImporter.SourceMap().SameAs(newX->Map()));
+  //assert((newX->Map()).SameAs(BsImporter.SourceMap()));
+  
+  
+  slu_map::Import(BS, *newX, *BsImporter);
+  //Bs.Import(*newX, BsImporter, Insert);
+  Vector *Xs = slu_map::nNewVecotr(BsMap, nvectors);
+  //Epetra_MultiVector Xs(BsMap, nvectors);
+  
+  
+  COMM *LComm = slu_map::NewSelfComm();
+  //Epetra_SerialComm LComm;// Use Serial Comm for the local vectors.
+  MAP  *LocalBdMap = slu_map::NewMap(-1, data->Dnr, data->DRowElems, 
+                                     0, *LComm);
+  //Epetra_Map LocalBdMap(-1, data->Dnr, data->DRowElems, 0, LComm);
+  Vector *localrhs = slu_map::NewVector(LocalBdMap, nvectors);
+  //Epetra_MultiVector localrhs(LocalBdMap, nvectors);
+  Vector *locallhs = slu_map::NewVector(LocalBdMap, nvectors);
+  //Epetra_MultiVector locallhs(LocalBdMap, nvectors);
+  
+  Vector *Z = slu_map::NewVector(BdMap, nvectors);
+  //Epetra_MultiVector Z(BdMap, nvectors);
+  
+  Vector *Bd = slu_map::NewVector(BdMap, nvectors);
+  //Epetra_MultiVector Bd(BdMap, nvectors);
+  IMPORT *BdImporter = slu_map::NewImport(BdMap, slu_map::Map(newX));
+  //Epetra_Import BdImporter(BdMap, newX->Map());
+  
+  //Nedd to find a better way to support this??
+  //assert(BdImporter.SourceMap().SameAs(newX->Map()));
+  //assert((newX->Map()).SameAs(BdImporter.SourceMap()));
+  slu_map::Import(Bd, *newX, *BdImporter, Insert);
+  //Bd.Import(*newX, BdImporter, Insert);
+  
+  LT lda;
+  //int lda;
+  ST *values;
+  //double *values;
+  //err = Bd.ExtractView(&values, &lda);
+  assert (err == 0);
+  int nrows = ssym->C->RowMap().NumMyElements();
+  
+  // copy to local vector //TODO: OMP ?
+
+
+  //JDB: There has to be a better way to do this than copy all the values by hand
+  //Ask Siva
+  assert(lda == nrows);
+  for (LT v = 0; v < nvectors; v++)
+  //for (int v = 0; v < nvectors; v++)
+    {
+      for (int i = 0; i < nrows; i++)
+      //for (int i = 0; i < nrows; i++)
+        {
+          slu_map::ReplaceMyValues(localrhs,i, v, values[i+v*lda]);
+          //err = localrhs.ReplaceMyValue(i, v, values[i+v*lda]);
+          assert (err == 0);
+        }
+    }
+  
+    // TODO : Do we need to reset the lhs and rhs here ?
+  if (config->amesosForDiagonal)
+    {
+      ssym->LP->SetRHS(&localrhs);
+      ssym->LP->SetLHS(&locallhs);
+      ssym->Solver->Solve();
+    }
+  else
+    {
+      ssym->ifSolver->ApplyInverse(localrhs, locallhs);
+    }
+  
+  err = locallhs.ExtractView(&values, &lda);
+  assert (err == 0);
+  
+  // copy to distributed vector //TODO: OMP ?
+  assert(lda == nrows);
+  for (int v = 0; v < nvectors; v++)
+    {
+      for (int i = 0; i < nrows; i++)
+        {
+          err = Z.ReplaceMyValue(i, v, values[i+v*lda]);
+          assert (err == 0);
+        }
+    }
+  
+  Epetra_MultiVector temp1(BsMap, nvectors);
+  ssym->R->Multiply(false, Z, temp1);
+  Bs.Update(-1.0, temp1, 1.0);
+  
+  Xs.PutScalar(0.0);
+  
+  Epetra_LinearProblem Problem(data->Sbar.get(), &Xs, &Bs);
+  if (config->schurSolver == "Amesos")
+    {
+      Amesos_BaseSolver *solver2 = data->dsolver;
+      data->LP2->SetLHS(&Xs);
+      data->LP2->SetRHS(&Bs);
+      //cout << "Calling solve *****************************" << endl;
+      solver2->Solve();
+      //cout << "Out of solve *****************************" << endl;
+    }
+  else
+    {
+      if (config->libName == "Belos")
+        {
+          solver = data->innersolver;
+          solver->SetLHS(&Xs);
+          solver->SetRHS(&Bs);
+        }
+      else
+        {
+          // See the comment above on why we are not able to reuse the solver
+          // when outer solve is AztecOO as well.
+          solver = new AztecOO();
+          //solver.SetPrecOperator(precop_);
+          solver->SetAztecOption(AZ_solver, AZ_gmres);
+          // Do not use AZ_none
+          solver->SetAztecOption(AZ_precond, AZ_dom_decomp);
+          //solver->SetAztecOption(AZ_precond, AZ_none);
+          //solver->SetAztecOption(AZ_precond, AZ_Jacobi);
+          ////solver->SetAztecOption(AZ_precond, AZ_Neumann);
+          //solver->SetAztecOption(AZ_overlap, 3);
+          //solver->SetAztecOption(AZ_subdomain_solve, AZ_ilu);
+          //solver->SetAztecOption(AZ_output, AZ_all);
+          //solver->SetAztecOption(AZ_diagnostics, AZ_all);
+          solver->SetProblem(Problem);
+        }
+      
+      // What should be a good inner_tolerance :-) ?
+      solver->Iterate(config->inner_maxiters, config->inner_tolerance);
+    }
+  
+  Epetra_MultiVector temp(BdMap, nvectors);
+  ssym->C->Multiply(false, Xs, temp);
+  temp.Update(1.0, Bd, -1.0);
+  
+  //Epetra_SerialComm LComm;        // Use Serial Comm for the local vectors.
+  //Epetra_Map LocalBdMap(-1, data->Dnr, data->DRowElems, 0, LComm);
+  //Epetra_MultiVector localrhs(LocalBdMap, nvectors);
+  //Epetra_MultiVector locallhs(LocalBdMap, nvectors);
+  
+  //int lda;
+  //double *values;
+  err = temp.ExtractView(&values, &lda);
+  assert (err == 0);
+  //int nrows = data->Cptr->RowMap().NumMyElements();
+  
+  // copy to local vector //TODO: OMP ?
+  assert(lda == nrows);
+  for (int v = 0; v < nvectors; v++)
+    {
+      for (int i = 0; i < nrows; i++)
+        {
+          err = localrhs.ReplaceMyValue(i, v, values[i+v*lda]);
+          assert (err == 0);
+        }
+    }
+  
+  if (config->amesosForDiagonal)
+    {
+      ssym->LP->SetRHS(&localrhs);
+      ssym->LP->SetLHS(&locallhs);
+      ssym->Solver->Solve();
+    }
+  else
+    {
+      ssym->ifSolver->ApplyInverse(localrhs, locallhs);
+    }
+  
+  err = locallhs.ExtractView(&values, &lda);
+  assert (err == 0);
+  
+  // copy to distributed vector //TODO: OMP ?
+  assert(lda == nrows);
+  for (int v = 0; v < nvectors; v++)
+    {
+      for (int i = 0; i < nrows; i++)
+        {
+          err = temp.ReplaceMyValue(i, v, values[i+v*lda]);
+          assert (err == 0);
+        }
+    }
+  
+  // For checking faults
+  //if (NumApplyInverse_ == 5)  temp.ReplaceMyValue(0, 0, 0.0);
+  
+  Epetra_Export XdExporter(BdMap, Y.Map());
+  Y.Export(temp, XdExporter, Insert);
+  
+  Epetra_Export XsExporter(BsMap, Y.Map());
+  Y.Export(Xs, XsExporter, Insert);
+  
+  if (config->libName == "Belos" || config->schurSolver == "Amesos")
+    {
+      // clean up
+    }
+  else
+    {
+      delete solver;
+    }
+  return 0;
+  cout << "Add tpetra here" << endl;
+  cout << "Empty" << endl;
+  return -1;
+}//end shylu_dist_solve<Matrix,Vector>
+
+
+//removed static
+template <>
+int shylu_dist_solve<Epetra_CrsMatrix,Epetra_MultiVector>(
+                                                                 shylu_symbolic<Epetra_CrsMatrix,Epetra_MultiVector> *ssym,
+                                                                 shylu_data<Epetra_CrsMatrix,Epetra_MultiVector> *data,
+                                                                 shylu_config<Epetra_CrsMatrix,Epetra_MultiVector> *config,
     const Epetra_MultiVector& X,
     Epetra_MultiVector& Y
 )
@@ -256,14 +528,34 @@ static int shylu_dist_solve(
         delete solver;
     }
     return 0;
-}
+}//end shylu_dist_solve <epetra,epetra>
 
-static int shylu_local_solve(
-    shylu_symbolic *ssym,
-    shylu_data *data,
-    shylu_config *config,
-    const Epetra_MultiVector& X,
-    Epetra_MultiVector& Y
+/*------------------------------shylu_local_solve----------------*/
+
+
+//removed static
+template <class Matrix, class Vector>
+int shylu_local_solve
+(
+shylu_symbolic<Matrix,Vector> *ssym, 
+shylu_data<Matrix,Vector> *data, 
+shylu_config<Matrix,Vector> *config,
+ const Vector& X, 
+Vector& Y)
+{
+
+  return -1;
+}//end shylu_local_solve<Matrix,Vector>
+
+//removed static
+template <>
+int shylu_local_solve<Epetra_CrsMatrix, Epetra_MultiVector>
+(
+ shylu_symbolic<Epetra_CrsMatrix,Epetra_MultiVector> *ssym,
+ shylu_data<Epetra_CrsMatrix,Epetra_MultiVector> *data,
+ shylu_config<Epetra_CrsMatrix,Epetra_MultiVector> *config,
+ const Epetra_MultiVector& X,
+ Epetra_MultiVector& Y
 )
 {
     int err;
@@ -278,10 +570,17 @@ static int shylu_local_solve(
     // Get local portion of X
     data->localrhs->Import(X, *(data->BdImporter), Insert);
 
+
+    data->localrhs->Print(std::cout);
+    std::cout << " " << std::endl;
+    data->locallhs->Print(std::cout);
+
     // locallhs is z in paper
     if (config->amesosForDiagonal) {
+      std::cout << "calling amesos for diagon" << endl;
         ssym->OrigLP->SetRHS((data->localrhs).getRawPtr());
         ssym->OrigLP->SetLHS((data->locallhs).getRawPtr());
+        std::cout << "set RHS and LHS " << std::endl; 
         ssym->ReIdx_LP->fwd();
         ssym->Solver->Solve();
     }
@@ -379,18 +678,44 @@ static int shylu_local_solve(
     return 0;
 }
 
-int shylu_solve(
-    shylu_symbolic *ssym,
-    shylu_data *data,
-    shylu_config *config,
-    const Epetra_MultiVector& X,
-    Epetra_MultiVector& Y
+/*---------------------------------shylu_solve----------------------*/
+
+
+template <class Matrix, class Vector>
+int shylu_solve
+(
+ shylu_symbolic<Matrix,Vector> *ssym, 
+ shylu_data<Matrix,Vector> *data, 
+ shylu_config<Matrix,Vector> *config, 
+ const Vector &X, Vector &Y
+)
+{
+   if (config->sep_type != 1)
+     {
+      shylu_dist_solve<Matrix,Vector>(ssym, data, config, X, Y);
+     }
+   else
+     {
+      shylu_local_solve<Matrix,Vector>(ssym, data, config, X, Y);
+     }
+    return 0;
+}
+/*
+template <>
+int shylu_solve<Epetra_CrsMatrix, Epetra_MultiVector>
+(
+ shylu_symbolic<Epetra_CrsMatrix,Epetra_MultiVector> *ssym,
+ shylu_data<Epetra_CrsMatrix,Epetra_MultiVector> *data,
+ shylu_config<Epetra_CrsMatrix,Epetra_MultiVector> *config,
+ const Epetra_MultiVector& X,
+ Epetra_MultiVector& Y
 )
 {
     if (config->sep_type != 1)
-        shylu_dist_solve(ssym, data, config, X, Y);
+      shylu_dist_solve<Epetra_CrsMatrix,Epetra_MultiVector>(ssym, data, config, X, Y);
     else
-        shylu_local_solve(ssym, data, config, X, Y);
+      shylu_local_solve<Epetra_CrsMatrix,Epetra_MultiVector>(ssym, data, config, X, Y);
 
     return 0;
 }
+*/
