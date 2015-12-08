@@ -64,7 +64,9 @@
 #include <MueLu.hpp>
 
 #include <MueLu_BaseClass.hpp>
+#ifdef HAVE_MUELU_EXPLICIT_INSTANTIATION
 #include <MueLu_ExplicitInstantiation.hpp>
+#endif
 #include <MueLu_Level.hpp>
 #include <MueLu_MutuallyExclusiveTime.hpp>
 #include <MueLu_ParameterListInterpreter.hpp>
@@ -88,7 +90,8 @@
 #endif
 
 template<class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
-int main_(Xpetra::UnderlyingLib lib, int argc, char *argv[]) {
+int main_(Teuchos::CommandLineProcessor &clp, int argc, char *argv[]) {
+  
 #include <MueLu_UseShortNames.hpp>
 
   using Teuchos::RCP;
@@ -112,17 +115,19 @@ int main_(Xpetra::UnderlyingLib lib, int argc, char *argv[]) {
   // =========================================================================
   // Parameters initialization
   // =========================================================================
-  Teuchos::CommandLineProcessor clp(false);
+  //Teuchos::CommandLineProcessor clp(false);
 
   GO nx = 100, ny = 100, nz = 100;
   Galeri::Xpetra::Parameters<GO> galeriParameters(clp, nx, ny, nz, "Laplace2D"); // manage parameters of the test case
   Xpetra::Parameters             xpetraParameters(clp);                          // manage parameters of Xpetra
+  Xpetra::UnderlyingLib lib = xpetraParameters.GetLib();
 
   std::string xmlFileName       = "scaling.xml";     clp.setOption("xml",                   &xmlFileName,       "read parameters from a file");
   bool        printTimings      = true;              clp.setOption("timings", "notimings",  &printTimings,      "print timings to screen");
   int         writeMatricesOPT  = -2;                clp.setOption("write",                 &writeMatricesOPT,  "write matrices to file (-1 means all; i>=0 means level i)");
   std::string dsolveType        = "cg", solveType;   clp.setOption("solver",                &dsolveType,        "solve type: (none | cg | gmres | standalone)");
   double      dtol              = 1e-12, tol;        clp.setOption("tol",                   &dtol,              "solver convergence tolerance");
+  bool        binaryFormat      = false;             clp.setOption("binary", "ascii",       &binaryFormat,      "print timings to screen");
 
   std::string mapFile;                               clp.setOption("map",                   &mapFile,           "map data file");
   std::string colMapFile;                            clp.setOption("colmap",                &colMapFile,        "colmap data file");
@@ -237,8 +242,6 @@ int main_(Xpetra::UnderlyingLib lib, int argc, char *argv[]) {
     if (!mapFile.empty())
       map = Xpetra::IO<SC,LO,GO,Node>::ReadMap(mapFile, lib, comm);
     comm->barrier();
-
-    const bool binaryFormat = false;
 
     if (!binaryFormat && !map.is_null()) {
       RCP<const Map> colMap    = (!colMapFile.empty()    ? Xpetra::IO<SC,LO,GO,Node>::ReadMap(colMapFile,    lib, comm) : Teuchos::null);
@@ -369,7 +372,11 @@ int main_(Xpetra::UnderlyingLib lib, int argc, char *argv[]) {
         if (lib == Xpetra::UseTpetra) {
 #ifdef HAVE_MUELU_TPETRA
           RCP<Tpetra::CrsMatrix<SC, LO, GO, NO> >     tA = Utilities::Op2NonConstTpetraCrs(A);
-          RCP<MueLu::TpetraOperator<SC, LO, GO, NO> > tH = MueLu::CreateTpetraPreconditioner(tA, mueluList, Utilities::MV2NonConstTpetraMV(coordinates));
+          RCP<MueLu::TpetraOperator<SC, LO, GO, NO> > tH;
+          if (!coordinates.is_null())
+            tH = MueLu::CreateTpetraPreconditioner(tA, mueluList, Utilities::MV2NonConstTpetraMV(coordinates));
+          else
+            tH = MueLu::CreateTpetraPreconditioner(tA, mueluList);
 
           if (useAMGX) {
 #ifdef HAVE_MUELU_AMGX
@@ -383,7 +390,11 @@ int main_(Xpetra::UnderlyingLib lib, int argc, char *argv[]) {
         } else {
 #if defined(HAVE_MUELU_EPETRA) && defined(HAVE_MUELU_SERIAL)
           RCP<Epetra_CrsMatrix> eA = Utilities::Op2NonConstEpetraCrs(A);
-          RCP<MueLu::EpetraOperator> eH = MueLu::CreateEpetraPreconditioner(eA, mueluList, Utilities::MV2NonConstEpetraMV(coordinates));
+          RCP<MueLu::EpetraOperator> eH;
+          if (!coordinates.is_null())
+            eH = MueLu::CreateEpetraPreconditioner(eA, mueluList, Utilities::MV2NonConstEpetraMV(coordinates));
+          else
+            eH = MueLu::CreateEpetraPreconditioner(eA, mueluList);
           RCP<MueLu::Hierarchy<double,int,int,Kokkos::Compat::KokkosSerialWrapperNode> > myH = eH->GetHierarchy();
           H = Teuchos::rcp_dynamic_cast<MueLu::Hierarchy<SC, LO, GO, NO> >(myH);
           TEUCHOS_TEST_FOR_EXCEPTION(H == Teuchos::null, MueLu::Exceptions::Incompatible, "MueLu: ScalingDriver: Dynamic cast to Hierarchy failed. Epetra needs SC=double, LO=GO=int and Node=Serial.");
@@ -533,11 +544,14 @@ int main_(Xpetra::UnderlyingLib lib, int argc, char *argv[]) {
 
     } while (!stop);
   }
+
+  return EXIT_SUCCESS;
 }
 
 int main(int argc, char* argv[]) {
   bool success = false;
   bool verbose = true;
+  int return_code = EXIT_FAILURE;
 
   try {
     const bool throwExceptions     = false;
@@ -546,27 +560,20 @@ int main(int argc, char* argv[]) {
     Teuchos::CommandLineProcessor clp(throwExceptions, recogniseAllOptions);
     Xpetra::Parameters xpetraParameters(clp);
 
-    switch (clp.parse(argc, argv)) {
-      case Teuchos::CommandLineProcessor::PARSE_HELP_PRINTED:        return EXIT_SUCCESS;
-      case Teuchos::CommandLineProcessor::PARSE_ERROR:               return EXIT_FAILURE;
-      case Teuchos::CommandLineProcessor::PARSE_UNRECOGNIZED_OPTION:
-      case Teuchos::CommandLineProcessor::PARSE_SUCCESSFUL:          break;
-    }
-
     Xpetra::UnderlyingLib lib = xpetraParameters.GetLib();
 
     if (lib == Xpetra::UseTpetra) {
       typedef KokkosClassic::DefaultNode::DefaultNodeType Node;
 
 #ifndef HAVE_MUELU_EXPLICIT_INSTANTIATION
-      main_<double,int,long,Node>(lib, argc, argv);
+      return_code = main_<double,int,long,Node>(clp, argc, argv);
 #else
 #  if defined(HAVE_MUELU_INST_DOUBLE_INT_INT)
-      main_<double,int,int,Node> (lib, argc, argv);
+      return_code = main_<double,int,int,Node> (clp, argc, argv);
 #elif defined(HAVE_MUELU_INST_DOUBLE_INT_LONGINT)
-      main_<double,int,long,Node>(lib, argc, argv);
+      return_code = main_<double,int,long,Node>(clp, argc, argv);
 #elif defined(HAVE_MUELU_INST_DOUBLE_INT_LONGLONGINT)
-      main_<double,int,long long,Node>(lib, argc, argv);
+      return_code = main_<double,int,long long,Node>(clp, argc, argv);
 #else
       throw std::runtime_error("Found no suitable instantiation");
 #endif
@@ -575,12 +582,11 @@ int main(int argc, char* argv[]) {
 
     if (lib == Xpetra::UseEpetra) {
       typedef Kokkos::Compat::KokkosSerialWrapperNode Node;
-      main_<double,int,int,Node>(lib, argc, argv);
+      return_code = main_<double,int,int,Node>(clp, argc, argv);
     }
 
-    success = true;
   }
   TEUCHOS_STANDARD_CATCH_STATEMENTS(verbose, std::cerr, success);
 
-  return ( success ? EXIT_SUCCESS : EXIT_FAILURE );
+  return return_code;
 }

@@ -137,6 +137,8 @@ namespace BaskerNS
     knobs[1] = 0;
     knobs[2] = 2;
 
+    printf("Test n: %d \n", n);
+
     amesos_csymamd_l(n, Ai, Ap,  p, knobs, stats, 
 		     &(calloc), &(free), 
 		     cmember, 0);
@@ -194,8 +196,8 @@ namespace BaskerNS
 
     INT_1DARRAY temp_p;
     BASKER_ASSERT(M.ncol > 0, "AMD perm not long enough");
-    MALLOC_INT_1DARRAY(temp_p, M.ncol);
-    init_value(temp_p, M.ncol, (Int) -1);
+    MALLOC_INT_1DARRAY(temp_p, M.ncol+1);
+    init_value(temp_p, M.ncol+1, (Int) 0);
     
     my_amesos_csymamd(M.ncol, &(M.col_ptr(0)), &(M.row_idx(0)),
 		     &(temp_p(0)), &(cmember(0)));
@@ -295,6 +297,7 @@ namespace BaskerNS
    )
   {
     amesos_colamd(n_row,n_col,Alen,A,p,knobs,stats);
+    return 0;
   }//end amesos_colamd<int>
   
 

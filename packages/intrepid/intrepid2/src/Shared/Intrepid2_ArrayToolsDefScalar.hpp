@@ -1929,16 +1929,7 @@ void ArrayTools::scalarMultiplyDataData(ArrayOutData &           outputData,
   size_t invalRank      = getrank(inputDataRight);
   size_t outvalRank     = getrank(outputData);
   int numCells       = outputData.dimension(0);
-  int numPoints      = outputData.dimension(1);
   int numDataPoints  = inputDataLeft.dimension(1);
-  int dim1Tens       = 0;
-  int dim2Tens       = 0;
-  if (outvalRank > 2) {
-    dim1Tens = outputData.dimension(2);
-    if (outvalRank > 3) {
-      dim2Tens = outputData.dimension(3);
-    }
-  }
 
   if (outvalRank == invalRank) {
 

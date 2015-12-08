@@ -1,7 +1,7 @@
 #ifndef BASKER_NFACTOR_BLK_HPP
 #define BASKER_NFACTOR_BLK_HPP
 
-#include "basker_decl.hpp"
+//#include "basker_decl.hpp"
 #include "basker_matrix_decl.hpp"
 #include "basker_matrix_view_decl.hpp"
 #include "basker_matrix_view_def.hpp"
@@ -128,7 +128,8 @@ namespace BaskerNS
 				   std::make_pair((Int)ws_size, 
 						(Int)2*ws_size));
     */
-
+    
+    maxindex = BASKER_MAX_IDX;
     cu_ltop = lval;
     cu_utop = uval;
     top = ws_size;
@@ -340,11 +341,11 @@ namespace BaskerNS
           //printf("TAG1 r  maxindex = %d k= %d  pivot: %f \n", 
 	  //	 maxindex, k, pivot);
           #ifdef BASKER_DEBUG_NFACTOR
-          if(maxindex != k)
-            {
-              cout << "Permuting Pivot: " << k << " as row " 
-                   << maxindex << endl;
-            }
+          //if(maxindex != k)
+          //  {
+          //    cout << "Permuting Pivot: " << k << " as row " 
+          //         << maxindex << endl;
+          //  }
           #endif
           
           //Note: Come back to this!!!!

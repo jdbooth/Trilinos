@@ -2,6 +2,7 @@
 #define BASKER_ORDER_BTF_HPP
 
 #include "basker_types.hpp"
+#include "basker_sswrapper.hpp"
 #include <assert.h>
 
 //Depends on SuiteSparse in Amesos
@@ -15,6 +16,8 @@ namespace BaskerNS
 {
 
   
+
+  /*
   template <class Int>
   BASKER_INLINE
   int my_strong_component
@@ -39,7 +42,7 @@ namespace BaskerNS
 
   template <>
   BASKER_INLINE
-  int my_strong_component <>
+  int my_strong_component <int>
   (
    //BASKER_MATRIX &M,
    int           &n,
@@ -67,11 +70,12 @@ namespace BaskerNS
     //l_Int work[M.nrow*4];
 
     //printf("before amesos call \n");
-    /*
-    nblks = amesos_btf_strongcomp(M.ncol,&(M.col_ptr[0]),
-				    &(M.row_idx[0]), 
-				    &(perm_in[0]), p, r, work);
-    */
+   
+    //nblks = amesos_btf_strongcomp(M.ncol,&(M.col_ptr[0]),
+    //&(M.row_idx[0]), 
+//				    &(perm_in[0]), p, r, work);
+  //
+  
     nblks = amesos_btf_strongcomp(n, col_ptr,
 				    row_idx, 
 				    perm_in, p, r, work);
@@ -115,7 +119,7 @@ namespace BaskerNS
   }
 
   template <>
-  int my_strong_component< >
+  int my_strong_component <long>
   (
    //BASKER_MATRIX &M,
    //long           &nblks,
@@ -141,11 +145,11 @@ namespace BaskerNS
     l_Int work[n*4];
 
     //printf("before amesos call \n");
-    /*
-    nblks = amesos_btf_l_strongcomp(M.ncol,&(M.col_ptr[0]),
-				    &(M.row_idx[0]), 
-				    &(perm_in[0]), p, r, work);
-    */
+    
+    //nblks = amesos_btf_l_strongcomp(M.ncol,&(M.col_ptr[0]),
+//				    &(M.row_idx[0]), 
+//				    &(perm_in[0]), p, r, work);
+    
      nblks = amesos_btf_l_strongcomp(n,
 				    col_ptr,
 				     row_idx, 
@@ -186,7 +190,7 @@ namespace BaskerNS
     return 0;
   }//strong_component<long int, Entry, Exe_Space>
 
-
+  */
 
   template <class Int, class Entry, class Exe_Space>
   BASKER_INLINE
@@ -195,9 +199,6 @@ namespace BaskerNS
     Int          nblks = 0;
     //INT_1DARRAY  btf_perm = order_btf_array;
     //INT_1DARRAY  btf_tabs;
-
-    
-    
 
     //printf("before strong comp \n");
     strong_component(M,nblks,order_btf_array,btf_tabs);
@@ -277,10 +278,10 @@ namespace BaskerNS
    )
   {
 
-    //#ifdef BASKER_DEBUG_ORDER_BTF
+    #ifdef BASKER_DEBUG_ORDER_BTF
     printf("break_into_parts called \n");
     printf("nblks: %d \n", nblks);
-    //#endif
+    #endif
     
     Options.btf = BASKER_TRUE;
 
@@ -433,14 +434,14 @@ namespace BaskerNS
 
     
     
-    //#ifdef BASKER_DEBUG_ORDER_BTF
+    #ifdef BASKER_DEBUG_ORDER_BTF
     printf("Set Shape BTF_B: %d %d %d %d \n",
 	   BTF_B.srow, BTF_B.nrow,
 	   BTF_B.scol, BTF_B.ncol);
     printf("Set Shape BTF_C: %d %d %d %d \n",
 	   BTF_C.srow, BTF_C.nrow,
 	   BTF_C.scol, BTF_C.nrow);
-    //#endif
+    #endif
     
     //Scan and find nnz
     //We can do this much better!!!!
@@ -950,20 +951,31 @@ namespace BaskerNS
     MALLOC_INT_1DARRAY(perm_in, M.ncol);
     MALLOC_INT_1DARRAY(perm, M.ncol);
     //JDB:Note, this needs to be changed just fixed for int/long
-    MALLOC_INT_1DARRAY(CC, M.ncol);
+    MALLOC_INT_1DARRAY(CC, M.ncol+1);
     for(l_int i = 0; i < M.ncol; i++)
       {
 	perm_in(i) = i;
       }
     //printf("SC one \n");
     //my_strong_component(M,nblks,perm,perm_in, CC);
-    my_strong_component(M.ncol,
+    BaskerSSWrapper<Int>::my_strong_component(M.ncol,
 			&(M.col_ptr(0)),
 			&(M.row_idx(0)),
 			nblks,
 			&(perm(0)),
 			&(perm_in(0)), 
 			&(CC(0)));
+
+    #ifdef BASKER_DEBUG_ORDER_BTF
+    FILE *fp;
+    fp = fopen("btf.txt", "w");
+    for(Int i = 0; i < M.ncol; i++)
+      {
+        fprintf(fp, "%d \n", perm(i));
+      }
+    fclose(fp);
+    #endif
+
     
     printf("FOUND NBLKS: %d \n", nblks);
 
@@ -1070,8 +1082,6 @@ namespace BaskerNS
   }//strong_component<long int, Entry, Exe_Space>
   */
 #endif // End HAVE_AMESOS
-
-
 
 }//end namespace BaskerNS
 

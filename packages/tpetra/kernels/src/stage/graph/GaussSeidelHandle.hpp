@@ -5,17 +5,22 @@
 #ifndef _GAUSSSEIDELHANDLE_HPP
 #define _GAUSSSEIDELHANDLE_HPP
 //#define VERBOSE
-namespace Experimental{
 
 namespace KokkosKernels{
+
+namespace Experimental{
+
 namespace Graph{
 
 enum GSAlgorithm{GS_DEFAULT, GS_PERMUTED, GS_TEAM};
 
-template <class idx_array_type_, class idx_edge_array_type_, class value_array_type_, class ExecutionSpace, class TemporaryMemorySpace, class PersistentMemorySpace>
+template <class idx_array_type_,
+          class idx_edge_array_type_,
+          class value_array_type_,
+          class ExecutionSpace,
+          class TemporaryMemorySpace,
+          class PersistentMemorySpace>
 class GaussSeidelHandle{
-
-
 public:
   typedef ExecutionSpace HandleExecSpace;
   typedef TemporaryMemorySpace HandleTempMemorySpace;
@@ -216,7 +221,11 @@ private:
 
   value_persistent_work_array_type get_permuted_y_vector (){return this->permuted_y_vector;}
   value_persistent_work_array_type get_permuted_x_vector (){return this->permuted_x_vector;}
-  void vector_team_size(int max_allowed_team_size, int &suggested_vector_size_, int &suggested_team_size_){
+  void vector_team_size(
+      int max_allowed_team_size,
+      int &suggested_vector_size_,
+      int &suggested_team_size_,
+      idx nr, idx nnz){
     //suggested_team_size_ =  this->suggested_team_size = 1;
     //suggested_vector_size_=this->suggested_vector_size = 1;
     //return;
@@ -252,7 +261,7 @@ private:
 #if defined( KOKKOS_HAVE_CUDA )
     if (Kokkos::Impl::is_same<Kokkos::Cuda, ExecutionSpace >::value){
 
-      this->suggested_vector_size = this->entries.dimension_0() / double (this->row_map.dimension_0()) + 0.5;
+      this->suggested_vector_size = nnz / double (nr) + 0.5;
 
       if (this->suggested_vector_size <= 3){
         this->suggested_vector_size = 2;

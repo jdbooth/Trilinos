@@ -1236,8 +1236,6 @@ template <typename Adapter>
     multiCriteriaNorm mcNorm,
     const RCP<const Adapter> &ia,
     const RCP<const PartitioningSolution<Adapter> > &solution,
-    const ArrayRCP<const StridedData<typename Adapter::lno_t,
-                                     typename Adapter::scalar_t> > vWeights,
     typename Adapter::part_t &numParts,
     typename Adapter::part_t &numNonemptyParts,
     ArrayRCP<MetricValues<typename Adapter::scalar_t> > &metrics)
@@ -1255,9 +1253,16 @@ template <typename Adapter>
 
   // Parts to which objects are assigned.
 
-  const part_t *parts = solution->getPartListView();
-  env->localInputAssertion(__FILE__, __LINE__, "parts not set", 
-    ((numLocalObjects == 0) || parts), BASIC_ASSERTION);
+  const part_t *parts;
+  if (solution != Teuchos::null) {
+    parts = solution->getPartListView();
+    env->localInputAssertion(__FILE__, __LINE__, "parts not set", 
+      ((numLocalObjects == 0) || parts), BASIC_ASSERTION);
+  } else {
+    part_t *procs = new part_t [numLocalObjects];
+    for (size_t i = 0; i < numLocalObjects; i++) procs[i] = comm->getRank();
+    parts = procs;
+  }
   ArrayView<const part_t> partArray(parts, numLocalObjects);
 
   // Weights, if any, for each object.

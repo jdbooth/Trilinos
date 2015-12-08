@@ -58,7 +58,6 @@
 using namespace std;
 using namespace Intrepid2;
 
-
 /** \brief  Maps the vertices of the subcell parametrization domain to that subcell. 
             
             Parametrization tests check if the vertices of the parametrization domain are properly 
@@ -671,9 +670,5 @@ void testSubcellParametrizations(int&                               errorFlag,
   }// for subcOrd
   
 }
-
-
-
-
 
 

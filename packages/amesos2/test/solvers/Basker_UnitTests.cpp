@@ -65,13 +65,9 @@
 //#include "Amesos2_Basker_decl.hpp"
 //#include "Amesos2_Basker_def.hpp"
 
-
-
-#ifdef SHYLUBASKER
-
-#pragma message("FLAG EXISTS")
-
-#endif
+//#ifdef SHYLUBASKER
+//#pragma message("FLAG EXISTS")
+//#endif
 
 
 namespace {
@@ -312,6 +308,8 @@ namespace {
 
     Xhat->randomize();
     Xhat->describe(*(getDefaultOStream()), Teuchos::VERB_EXTREME);
+    X->describe(*(getDefaultOStream()), Teuchos::VERB_EXTREME);
+    B->describe(*(getDefaultOStream()), Teuchos::VERB_EXTREME);
 
 
     // Solve A*Xhat = B for Xhat using the Bakser solver
@@ -566,7 +564,11 @@ namespace {
   /*
    * Instantiations
    */
-#ifdef HAVE_TEUCHOS_COMPLEX
+
+#if defined(HAVE_TEUCHOS_COMPLEX) && !defined(SHYLUBASKER)
+  //#ifndef SHYLUBASKER
+#pragma message("T COMPLEX");
+
 #  define UNIT_TEST_GROUP_ORDINAL_COMPLEX_SCALAR(LO, GO, SCALAR)        \
   typedef std::complex<SCALAR>  Complex##SCALAR;                        \
   TEUCHOS_UNIT_TEST_TEMPLATE_3_INSTANT( Basker, Initialization, Complex##SCALAR, LO, GO ) \
@@ -580,19 +582,20 @@ namespace {
   UNIT_TEST_GROUP_ORDINAL_COMPLEX_SCALAR(LO, GO, float)
 #  else
 #  define UNIT_TEST_GROUP_ORDINAL_COMPLEX_FLOAT(LO, GO)
-#  endif
+#  endif//end have complex_flox
 
 #  ifdef HAVE_TPETRA_INST_COMPLEX_DOUBLE
 #  define UNIT_TEST_GROUP_ORDINAL_COMPLEX_DOUBLE(LO, GO)        \
   UNIT_TEST_GROUP_ORDINAL_COMPLEX_SCALAR(LO, GO, double)
 #  else
 #  define UNIT_TEST_GROUP_ORDINAL_COMPLEX_DOUBLE(LO, GO)
-#  endif
-
+#  endif//end complex_double
+       //#endif //SHYLUBASKER
 #else  // !(defined HAVE_TEUCHOS_COMPLEX
 #  define UNIT_TEST_GROUP_ORDINAL_COMPLEX_FLOAT(LO, GO)
 #  define UNIT_TEST_GROUP_ORDINAL_COMPLEX_DOUBLE(LO, GO)
 #endif
+  //#endif
 
 #ifdef HAVE_TPETRA_INST_FLOAT
 #  define UNIT_TEST_GROUP_ORDINAL_FLOAT( LO, GO )       \
@@ -612,12 +615,24 @@ namespace {
   // #define FAST_DEVELOPMENT_UNIT_TEST_BUILD
   //TEUCHOS_UNIT_TEST_TEMPLATE_3_INSTANT( KLU2, SolveTrans, SCALAR, LO, GO )
 
+#ifdef SHYLUBASKER
+
+#define UNIT_TEST_GROUP_ORDINAL_SCALAR( LO, GO, SCALAR )                \
+  TEUCHOS_UNIT_TEST_TEMPLATE_3_INSTANT( Basker, NumericFactorization, SCALAR, LO, GO ) \
+  TEUCHOS_UNIT_TEST_TEMPLATE_3_INSTANT( Basker, Solve, SCALAR, LO, GO )
+
+
+
+
+#else
+
 #define UNIT_TEST_GROUP_ORDINAL_SCALAR( LO, GO, SCALAR )                \
   TEUCHOS_UNIT_TEST_TEMPLATE_3_INSTANT( Basker, Initialization, SCALAR, LO, GO ) \
   TEUCHOS_UNIT_TEST_TEMPLATE_3_INSTANT( Basker, SymbolicFactorization, SCALAR, LO, GO ) \
   TEUCHOS_UNIT_TEST_TEMPLATE_3_INSTANT( Basker, NumericFactorization, SCALAR, LO, GO ) \
   TEUCHOS_UNIT_TEST_TEMPLATE_3_INSTANT( Basker, Solve, SCALAR, LO, GO )
 
+#endif
 
 #define UNIT_TEST_GROUP_ORDINAL( ORDINAL )              \
   UNIT_TEST_GROUP_ORDINAL_ORDINAL( ORDINAL, ORDINAL )

@@ -3,8 +3,8 @@
 #include <string>
 #include <cstdlib>
 
-#include "basker_decl.hpp"
-#include "basker_def.hpp"
+#include "shylubasker_decl.hpp"
+#include "shylubasker_def.hpp"
  
 #ifdef BASKER_KOKKOS
 #include <Kokkos_Core.hpp>
@@ -36,7 +36,6 @@ int main(int argc, char* argv[])
   //Int numthreads = atoi(argv[3]);
 
   std::string fname = "matrix1.mtx";
-  //std::string fname = "matrix1.b.mtx";
   
   Int numthreads = atoi(argv[1]);
 
@@ -201,11 +200,11 @@ int main(int argc, char* argv[])
   cout << "--------------Done SFactor------------------" << endl;
   mybasker.Factor(m,n,nnz,col_ptr,row_idx,vals);
   cout << "--------------Done NFactor-----------------" << endl;
-  mybasker.DEBUG_PRINT();
-  cout << "--------------Done Print----------------------"<<endl;
+  //mybasker.DEBUG_PRINT();
+  //cout << "--------------Done Print----------------------"<<endl;
   mybasker.SolveTest();
   //mybasker.Solve(y,x);
-  //cout << "--------------Done Solve----------------------"<<endl;
+  cout << "--------------Done Solve----------------------"<<endl;
 
   #ifdef BASKER_KOKKOS
   Kokkos::finalize();

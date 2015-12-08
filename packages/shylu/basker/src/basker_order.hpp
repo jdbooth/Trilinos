@@ -119,6 +119,8 @@ namespace BaskerNS
   int Basker<Int,Entry,Exe_Space>::btf_order()
   {
 
+    //printMTX("odd_matrix.mtx", A);
+
     //1. Matching ordering on whole matrix
     //currently finds matching and permutes
     //found bottle-neck to work best with circuit problems
@@ -140,6 +142,8 @@ namespace BaskerNS
 
     if(btf_tabs_offset != 0)
       {
+
+        //  printf("A/B block stuff called\n");
     //3. ND on BTF_A
     //currently finds ND and permute BTF_A
     //Would like to change so finds permuation, 
@@ -236,6 +240,8 @@ namespace BaskerNS
     //A and B done.  Forget C for now.  
     //Comback if really hurt performance
 
+
+    //printf("Done with ordering\n");
     
     return 0;
   }//end btf_order
@@ -262,7 +268,7 @@ namespace BaskerNS
   {
 
 
-    printf("match_order called\n");
+    //printf("match_order called\n");
 
     /* ---- Tests --------
 
@@ -302,6 +308,7 @@ namespace BaskerNS
 
     //We want to test what the match ordering does if
     //have explicit zeros
+    #ifdef BASKER_DEBUG_ORDER
     FILE *fp;
     fp = fopen("match_order.txt", "w");
     for(Int i = 0; i < A.nrow; i++)
@@ -309,10 +316,9 @@ namespace BaskerNS
 	fprintf(fp, "%d \n", order_match_array(i));
       }
     fclose(fp);
+    #endif
 
     
-
-
     permute_row(A,order_match_array);
     //permute_row(A,mperm);
     //May have to call row_idx sort
@@ -329,15 +335,15 @@ namespace BaskerNS
 
     if(Options.symmetric == BASKER_TRUE)
       {
-	printf("Scotch Symmetric\n");
+	//printf("Scotch Symmetric\n");
 	part_scotch(M, part_tree);
       }
     else
       {
-	printf("Scotch Nonsymmetrix\n");
+	//printf("Scotch Nonsymmetrix\n");
 	BASKER_MATRIX MMT;
 	AplusAT(M,MMT);
-	printMTX("AAT.mtx", MMT);
+	//printMTX("AAT.mtx", MMT);
 	part_scotch(MMT, part_tree);
 	FREE(MMT);
       }

@@ -518,22 +518,27 @@ public:
   KOKKOS_INLINE_FUNCTION constexpr size_t stride_6() const { return m_map.stride_6(); }
   KOKKOS_INLINE_FUNCTION constexpr size_t stride_7() const { return m_map.stride_7(); }
 
+  template< typename iType >
+  KOKKOS_INLINE_FUNCTION void stride( iType * const s ) const { m_map.stride(s); }
+
   //----------------------------------------
   // Range span is the span which contains all members.
 
   typedef typename map_type::reference_type  reference_type ;
+  typedef typename map_type::pointer_type    pointer_type ;
 
   enum { reference_type_is_lvalue_reference = std::is_lvalue_reference< reference_type >::value };
 
   KOKKOS_INLINE_FUNCTION constexpr size_t span() const { return m_map.span(); }
+  // Deprecated, use 'span()' instead
   KOKKOS_INLINE_FUNCTION constexpr size_t capacity() const { return m_map.span(); }
   KOKKOS_INLINE_FUNCTION constexpr bool   span_is_contiguous() const { return m_map.span_is_contiguous(); }
-  KOKKOS_INLINE_FUNCTION constexpr typename traits::value_type * data() const { return m_map.data(); }
+  KOKKOS_INLINE_FUNCTION constexpr pointer_type data() const { return m_map.data(); }
 
   // Deprecated, use 'span_is_contigous()' instead
   KOKKOS_INLINE_FUNCTION constexpr bool   is_contiguous() const { return m_map.span_is_contiguous(); }
   // Deprecated, use 'data()' instead
-  KOKKOS_INLINE_FUNCTION constexpr typename traits::value_type * ptr_on_device() const { return m_map.data(); }
+  KOKKOS_INLINE_FUNCTION constexpr pointer_type ptr_on_device() const { return m_map.data(); }
 
   //----------------------------------------
   // Allow specializations to query their specialized map
@@ -1093,7 +1098,7 @@ public:
 
       // Construct the mapping object prior to start of tracking
       // to assign destroy functor and possibly initialize.
-      m_map = map_type( record->data()
+      m_map = map_type( reinterpret_cast< pointer_type >( record->data() )
                       , prop.allow_padding
                       , arg_N0 , arg_N1 , arg_N2 , arg_N3
                       , arg_N4 , arg_N5 , arg_N6 , arg_N7 );
@@ -1145,7 +1150,7 @@ public:
 
       // Construct the mapping object prior to start of tracking
       // to assign destroy functor and possibly initialize.
-      m_map = map_type( record->data() , prop.allow_padding , arg_layout );
+      m_map = map_type( reinterpret_cast< pointer_type >( record->data() ) , prop.allow_padding , arg_layout );
 
       // Copy the destroy functor into the allocation record before initiating tracking.
 
@@ -1178,7 +1183,7 @@ public:
     }
 
   explicit inline
-  View( typename traits::value_type * const arg_ptr
+  View( pointer_type arg_ptr
       , const size_t arg_N0 = 0
       , const size_t arg_N1 = 0
       , const size_t arg_N2 = 0
@@ -1195,7 +1200,7 @@ public:
     {}
 
   explicit inline
-  View( typename traits::value_type * const arg_ptr
+  View( pointer_type arg_ptr
       , typename traits::array_layout & arg_layout
       )
     : m_track() // No memory tracking
@@ -1231,12 +1236,14 @@ public:
       , const size_t arg_N6 = 0
       , const size_t arg_N7 = 0 )
     : m_track() // No memory tracking
-    , m_map( arg_space.get_shmem( map_type::memory_span( std::integral_constant<bool,false>()
-                                                       , arg_N0 , arg_N1 , arg_N2 , arg_N3
-                                                       , arg_N4 , arg_N5 , arg_N6 , arg_N7 ) )
-           , std::integral_constant<bool,false>() 
-           , arg_N0 , arg_N1 , arg_N2 , arg_N3
-           , arg_N4 , arg_N5 , arg_N6 , arg_N7 )
+    , m_map( reinterpret_cast<pointer_type>(
+       arg_space.get_shmem(
+         map_type::memory_span( std::integral_constant<bool,false>()
+                              , arg_N0 , arg_N1 , arg_N2 , arg_N3
+                              , arg_N4 , arg_N5 , arg_N6 , arg_N7 ) ) )
+         , std::integral_constant<bool,false>() 
+         , arg_N0 , arg_N1 , arg_N2 , arg_N3
+         , arg_N4 , arg_N5 , arg_N6 , arg_N7 )
     {}
 };
 
@@ -1773,6 +1780,7 @@ using Kokkos::Experimental::create_mirror_view ;
 using Kokkos::Experimental::subview ;
 using Kokkos::Experimental::resize ;
 using Kokkos::Experimental::realloc ;
+using Kokkos::Experimental::is_view ;
 
 namespace Impl {
 

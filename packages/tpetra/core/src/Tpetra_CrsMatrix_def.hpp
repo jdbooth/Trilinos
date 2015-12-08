@@ -1987,39 +1987,6 @@ namespace Tpetra {
   LocalOrdinal
   CrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node, classic>::
   replaceLocalValues (const LocalOrdinal localRow,
-                      const Kokkos::View<const LocalOrdinal*, device_type,
-                        Kokkos::MemoryUnmanaged>& cols,
-                      const Kokkos::View<const impl_scalar_type*, device_type,
-                        Kokkos::MemoryUnmanaged>& vals) const
-  {
-    typedef impl_scalar_type ST;
-    typedef LocalOrdinal LO;
-    typedef device_type DD;
-
-    if (! isFillActive () || staticGraph_.is_null ()) {
-      // Fill must be active and the graph must exist.
-      return Teuchos::OrdinalTraits<LO>::invalid ();
-    }
-
-    const RowInfo rowInfo = staticGraph_->getRowInfo (localRow);
-    if (rowInfo.localRow == Teuchos::OrdinalTraits<size_t>::invalid ()) {
-      // The input local row is invalid on the calling process,
-      // which means that the calling process summed 0 entries.
-      return static_cast<LO> (0);
-    }
-
-    auto curVals = this->getRowViewNonConst (rowInfo);
-    return staticGraph_->template replaceLocalValues<ST, DD, DD> (rowInfo,
-                                                                  curVals,
-                                                                  cols,
-                                                                  vals);
-  }
-
-
-  template<class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node, const bool classic>
-  LocalOrdinal
-  CrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node, classic>::
-  replaceLocalValues (const LocalOrdinal localRow,
                       const Teuchos::ArrayView<const LocalOrdinal> &indices,
                       const Teuchos::ArrayView<const Scalar>& values) const
   {
@@ -2029,6 +1996,8 @@ namespace Tpetra {
     typedef LocalOrdinal LO;
     typedef device_type DD;
     typedef typename View<LO*, DD>::HostMirror::device_type HD;
+    typedef View<const ST*, HD, MemoryUnmanaged> ISVT;
+    typedef View<const LO*, HD, MemoryUnmanaged> LIVT;
 
     if (! isFillActive () || staticGraph_.is_null ()) {
       // Fill must be active and the graph must exist.
@@ -2043,14 +2012,38 @@ namespace Tpetra {
     }
 
     auto curVals = this->getRowViewNonConst (rowInfo);
+    typedef typename std::remove_const<typename std::remove_reference<decltype (curVals)>::type>::type OSVT;
     const ST* valsRaw = reinterpret_cast<const ST*> (values.getRawPtr ());
-    View<const ST*, HD, MemoryUnmanaged> valsIn (valsRaw, values.size ());
-    View<const LO*, HD, MemoryUnmanaged> indsIn (indices.getRawPtr (),
-                                                 indices.size ());
-    return staticGraph_->template replaceLocalValues<ST, HD, DD> (rowInfo,
-                                                                  curVals,
-                                                                  indsIn,
-                                                                  valsIn);
+    ISVT valsIn (valsRaw, values.size ());
+    LIVT indsIn (indices.getRawPtr (), indices.size ());
+    return staticGraph_->template replaceLocalValues<OSVT, LIVT, ISVT> (rowInfo,
+                                                                        curVals,
+                                                                        indsIn,
+                                                                        valsIn);
+  }
+
+
+  template<class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node, const bool classic>
+  LocalOrdinal
+  CrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node, classic>::
+  replaceGlobalValues (const GlobalOrdinal globalRow,
+                       const Kokkos::View<const GlobalOrdinal*, device_type,
+                         Kokkos::MemoryUnmanaged>& inputInds,
+                       const Kokkos::View<const impl_scalar_type*, device_type,
+                         Kokkos::MemoryUnmanaged>& inputVals) const
+  {
+    typedef impl_scalar_type ST;
+    typedef device_type DD;
+    // project2nd is a binary function that returns its second
+    // argument.  This replaces entries in the given row with their
+    // corresponding entry of values.
+    typedef Tpetra::project2nd<ST, ST> BF;
+
+    // It doesn't make sense for replace to use atomic updates, since
+    // the result of multiple threads replacing the same value
+    // concurrently is undefined.
+    return this->template transformGlobalValues<BF, DD> (globalRow, inputInds,
+                                                         inputVals, BF (), false);
   }
 
 
@@ -2154,43 +2147,6 @@ namespace Tpetra {
   LocalOrdinal
   CrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node, classic>::
   sumIntoLocalValues (const LocalOrdinal localRow,
-                      const Kokkos::View<const LocalOrdinal*,
-                        CrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node, classic>::device_type,
-                        Kokkos::MemoryUnmanaged>& indices,
-                      const Kokkos::View<const impl_scalar_type*,
-                        CrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node, classic>::device_type,
-                        Kokkos::MemoryUnmanaged>& values,
-                      const bool atomic) const
-  {
-    typedef impl_scalar_type ST;
-    typedef LocalOrdinal LO;
-    typedef device_type DD;
-
-    if (! isFillActive () || staticGraph_.is_null ()) {
-      // Fill must be active and the graph must exist.
-      return Teuchos::OrdinalTraits<LO>::invalid ();
-    }
-
-    const RowInfo rowInfo = staticGraph_->getRowInfo (localRow);
-    if (rowInfo.localRow == Teuchos::OrdinalTraits<size_t>::invalid ()) {
-      // The input local row is invalid on the calling process,
-      // which means that the calling process summed 0 entries.
-      return static_cast<LO> (0);
-    }
-
-    auto curVals = this->getRowViewNonConst (rowInfo);
-    return staticGraph_->template sumIntoLocalValues<ST, DD, DD> (rowInfo,
-                                                                  curVals,
-                                                                  indices,
-                                                                  values,
-                                                                  atomic);
-  }
-
-
-  template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node, const bool classic>
-  LocalOrdinal
-  CrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node, classic>::
-  sumIntoLocalValues (const LocalOrdinal localRow,
                       const Teuchos::ArrayView<const LocalOrdinal>& indices,
                       const Teuchos::ArrayView<const Scalar>& values,
                       const bool atomic) const
@@ -2202,28 +2158,14 @@ namespace Tpetra {
     typedef device_type DD;
     typedef typename View<LO*, DD>::HostMirror::device_type HD;
 
-    if (! isFillActive () || staticGraph_.is_null ()) {
-      // Fill must be active and the graph must exist.
-      return Teuchos::OrdinalTraits<LO>::invalid ();
-    }
+    typedef View<const ST*, HD, MemoryUnmanaged> IVT;
+    typedef View<const LO*, HD, MemoryUnmanaged> IIT;
 
-    const RowInfo rowInfo = this->staticGraph_->getRowInfo (localRow);
-    if (rowInfo.localRow == Teuchos::OrdinalTraits<size_t>::invalid ()) {
-      // The input local row is invalid on the calling process,
-      // which means that the calling process summed 0 entries.
-      return static_cast<LO> (0);
-    }
-
-    auto curVals = this->getRowViewNonConst (rowInfo);
     const ST* valsRaw = reinterpret_cast<const ST*> (values.getRawPtr ());
-    View<const ST*, HD, MemoryUnmanaged> valsIn (valsRaw, values.size ());
-    View<const LO*, HD, MemoryUnmanaged> indsIn (indices.getRawPtr (),
-                                                 indices.size ());
-    return staticGraph_->template sumIntoLocalValues<ST, HD, DD> (rowInfo,
-                                                                  curVals,
-                                                                  indsIn,
-                                                                  valsIn,
-                                                                  atomic);
+    IVT valsIn (valsRaw, values.size ());
+    IIT indsIn (indices.getRawPtr (), indices.size ());
+    return this->template sumIntoLocalValues<IIT, IVT> (localRow, indsIn,
+                                                        valsIn, atomic);
   }
 
   template<class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node, const bool classic>
@@ -2937,7 +2879,7 @@ namespace Tpetra {
 
     // Find the diagonal entries and put them in lclVecHost1d.
     const size_t myNumRows = getNodeNumRows ();
-    for (size_t i = 0; i < myNumRows; ++i) {
+    Kokkos::parallel_for ( Kokkos::RangePolicy<host_execution_space>( 0, myNumRows), [&] (const size_t& i) {
       lclVecHost1d(i) = STS::zero (); // default value if no diag entry
       if (offsets[i] != Teuchos::OrdinalTraits<size_t>::invalid ()) {
         ArrayView<const LocalOrdinal> ind;
@@ -2948,7 +2890,7 @@ namespace Tpetra {
         this->getLocalRowView (i, ind, val);
         lclVecHost1d(i) = static_cast<impl_scalar_type> (val[offsets[i]]);
       }
-    }
+    });
     lclVec.template sync<execution_space> (); // sync changes back to device
   }
 

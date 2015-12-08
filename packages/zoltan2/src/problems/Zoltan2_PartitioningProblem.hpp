@@ -53,7 +53,7 @@
 #include <Zoltan2_Problem.hpp>
 #include <Zoltan2_PartitioningAlgorithms.hpp>
 #include <Zoltan2_PartitioningSolution.hpp>
-#include <Zoltan2_PartitioningSolutionQuality.hpp>
+#include <Zoltan2_EvaluatePartition.hpp>
 #include <Zoltan2_GraphModel.hpp>
 #include <Zoltan2_IdentifierModel.hpp>
 #include <Zoltan2_IntegerRangeList.hpp>
@@ -252,7 +252,7 @@ public:
     if (graphMetrics_.is_null())
       os << "No metrics available." << std::endl;
     else
-      graphMetrics_->printMetrics(os);
+      graphMetrics_->printGraphMetrics(os);
   };
 
   /*! \brief Set or reset relative sizes for the parts that Zoltan2 will create.
@@ -399,8 +399,8 @@ private:
   // Did the user request metrics?
 
   bool metricsRequested_;
-  RCP<const PartitioningSolutionQuality<Adapter> > metrics_;
-  RCP<const GraphPartitioningSolutionQuality<Adapter> > graphMetrics_;
+  RCP<const EvaluatePartition<Adapter> > metrics_;
+  RCP<const EvaluatePartition<Adapter> > graphMetrics_;
 };
 ////////////////////////////////////////////////////////////////////////
 
@@ -632,16 +632,14 @@ void PartitioningProblem<Adapter>::solve(bool updateInputData)
 
   if (metricsRequested_){
     typedef PartitioningSolution<Adapter> ps_t;
-    typedef PartitioningSolutionQuality<Adapter> psq_t;
+    typedef EvaluatePartition<Adapter> psq_t;
     typedef StridedData<lno_t, scalar_t> input_t;
 
     psq_t *quality = NULL;
     RCP<const ps_t> solutionConst = rcp_const_cast<const ps_t>(solution_);
-    ArrayRCP<const input_t> vWeights = Teuchos::null;
 
     try{
-      quality = new psq_t(this->envConst_, problemCommConst_,
-                          this->inputAdapter_, solutionConst, vWeights);
+      quality = new psq_t(this->envConst_, problemCommConst_, this->inputAdapter_, solutionConst);
     }
     Z2_FORWARD_EXCEPTIONS
 
@@ -650,12 +648,11 @@ void PartitioningProblem<Adapter>::solve(bool updateInputData)
     if (inputType_ == GraphAdapterType ||
 	inputType_ == MatrixAdapterType ||
 	inputType_ == MeshAdapterType){
-      typedef GraphPartitioningSolutionQuality<Adapter> gpsq_t;
 
-      gpsq_t *graphQuality = NULL;
+      psq_t *graphQuality = NULL;
 
       try{
-	graphQuality = new gpsq_t(this->envConst_, problemCommConst_,
+	graphQuality = new psq_t(this->envConst_, problemCommConst_,
 			     this->baseInputAdapter_, solutionConst);
       }
       Z2_FORWARD_EXCEPTIONS

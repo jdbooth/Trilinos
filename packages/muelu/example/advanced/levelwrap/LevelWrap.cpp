@@ -199,12 +199,12 @@ namespace MueLuExamples {
 
 #ifdef HAVE_MUELU_BELOS
 #ifdef HAVE_MUELU_TPETRA
-    typedef Tpetra::Operator<SC,LO,GO> Tpetra_Operator;
-    typedef Tpetra::CrsMatrix<SC,LO,GO> Tpetra_CrsMatrix;
-    typedef Tpetra::Vector<SC,LO,GO> Tpetra_Vector;
-    typedef Tpetra::MultiVector<SC,LO,GO> Tpetra_MultiVector;
+    typedef Tpetra::Operator<SC,LO,GO,NO> Tpetra_Operator;
+    typedef Tpetra::CrsMatrix<SC,LO,GO,NO> Tpetra_CrsMatrix;
+    typedef Tpetra::Vector<SC,LO,GO,NO> Tpetra_Vector;
+    typedef Tpetra::MultiVector<SC,LO,GO,NO> Tpetra_MultiVector;
     if(lib==Xpetra::UseTpetra) {
-      RCP<Tpetra_CrsMatrix>   At = Xpetra::Helpers<SC,LO,GO>::Op2NonConstTpetraCrs(A);
+      RCP<Tpetra_CrsMatrix>   At = Xpetra::Helpers<SC,LO,GO,NO>::Op2NonConstTpetraCrs(A);
       RCP<Tpetra_Operator>    Mt = MueLu::CreateTpetraPreconditioner(At,MueLuList);
       RCP<Tpetra_MultiVector> Xt = Xpetra::toTpetra(*X);
       RCP<Tpetra_MultiVector> Bt = Xpetra::toTpetra(*B);
@@ -224,7 +224,7 @@ namespace MueLuExamples {
 #endif
 #if defined(HAVE_MUELU_EPETRA) && defined(HAVE_MUELU_SERIAL)
     if(lib==Xpetra::UseEpetra) {
-      RCP<Epetra_CrsMatrix>   Ae = Xpetra::Helpers<SC,LO,GO>::Op2NonConstEpetraCrs(A);
+      RCP<Epetra_CrsMatrix>   Ae = Xpetra::Helpers<SC,LO,GO,NO>::Op2NonConstEpetraCrs(A);
       RCP<Epetra_Operator>    Me = MueLu::CreateEpetraPreconditioner(Ae,MueLuList);
       RCP<Epetra_MultiVector> Xe = rcp(&Xpetra::toEpetra(*X),false);
       RCP<Epetra_MultiVector> Be = rcp(&Xpetra::toEpetra(*B),false);

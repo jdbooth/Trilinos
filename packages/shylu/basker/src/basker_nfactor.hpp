@@ -4,7 +4,7 @@
 #define BASKER_DEBUG_NFACTOR 
 
 /*Basker Includes*/
-#include "basker_decl.hpp"
+//#include "basker_decl.hpp"
 #include "basker_types.hpp"
 #include "basker_util.hpp"
 #include "basker_structs.hpp"
@@ -69,7 +69,7 @@ namespace BaskerNS
   int Basker<Int, Entry, Exe_Space>::factor_notoken(Int option)
   {
 
-    printf("factor no token called \n");
+    //printf("factor no token called \n");
 
     gn = A.ncol;
     gm = A.nrow;
@@ -83,8 +83,8 @@ namespace BaskerNS
 	gn = A.ncol;
 	gm = A.nrow;
 	A = BTF_A; 
-	printf("\n\n Switching A, newsize: %d \n",
-	       A.ncol);
+	//printf("\n\n Switching A, newsize: %d \n",
+        //     A.ncol);
       }
    
 
