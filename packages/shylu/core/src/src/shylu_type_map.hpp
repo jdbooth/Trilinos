@@ -340,12 +340,14 @@ struct ShyLUStackMap
     return vec->getNumVectors();
   }
 
+  /*
   inline
   static
   MAP* Map(VT *vec)
   {
     return (vec->getMap());
   }
+  */
 
   inline
   static
@@ -646,12 +648,14 @@ struct ShyLUStackMap <Epetra_CrsMatrix,Epetra_MultiVector>
     return vec->NumVectors();
   }
 
+  /*
   inline
   static
   MAP* Map(VT *vec)
   {
     return vec->Map();
   }
+  */
 
   inline
   static

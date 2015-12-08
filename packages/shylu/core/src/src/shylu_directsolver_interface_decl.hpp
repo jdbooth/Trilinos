@@ -51,8 +51,8 @@
 #include "ShyLUCore_config.h"
 
 //ShyLU
-#include <shylu.h>
-#include <shylu_util.h>
+#include <shylu.hpp>
+#include <shylu_util_decl.hpp>
 
 //Epetra
 #include <Epetra_CrsMatrix.h>

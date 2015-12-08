@@ -86,8 +86,9 @@
 // AztecOO includes
 #include "AztecOO.h"
 
-#include "shylu.h"
-#include "shylu_util.h"
+#include "shylu.hpp"
+//#include "shylu_util.h"
+#include "shylu_util_decl.hpp"
 
 // Ifpack includes
 #include "Ifpack_Preconditioner.h"
@@ -332,9 +333,12 @@ int JustTryIt() ;
 
     Teuchos::ParameterList List_;
     //mutable AztecOO *solver_; // Ugh !!! Mutable ! To workaround AztecOO bug
-    mutable shylu_data slu_data_; // More mutable !!!
-    mutable shylu_config slu_config_; // More mutable !!
-    mutable shylu_symbolic slu_sym_; // More mutable !!
+    mutable shylu_data<Epetra_CrsMatrix, Epetra_MultiVector> 
+                                 slu_data_; // More mutable !!!
+    mutable shylu_config<Epetra_CrsMatrix, Epetra_MultiVector>
+                                slu_config_; // More mutable !!
+    mutable shylu_symbolic<Epetra_CrsMatrix, Epetra_MultiVector>
+                                slu_sym_; // More mutable !!
 
     //fpr later use
     // Isorropia::Epetra::Partitioner *partitioner_; // unused

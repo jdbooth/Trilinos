@@ -41,6 +41,8 @@
 //@HEADER
 
 
+
+
 #include <Epetra_Operator.h>
 #include <Epetra_CrsMatrix.h>
 #include <Epetra_LinearProblem.h>
@@ -52,14 +54,16 @@
 
 // TODO: 1. ltemp is not needed in the all local case.
 
-ShyLU_Probing_Operator::ShyLU_Probing_Operator(
-    shylu_config *config,
-    shylu_symbolic *ssym,   // symbolic structure
-    Epetra_CrsMatrix *G,
-    Epetra_CrsMatrix *R,
-    Epetra_LinearProblem *LP, Amesos_BaseSolver *solver,
-    Ifpack_Preconditioner *ifSolver, Epetra_CrsMatrix *C,
-    Epetra_Map *localDRowMap, int nvectors)
+ShyLU_Probing_Operator::ShyLU_Probing_Operator
+(
+ shylu_config<Epetra_CrsMatrix,Epetra_MultiVector> *config,
+ shylu_symbolic<Epetra_CrsMatrix,Epetra_MultiVector> *ssym,   // symbolic structure
+ Epetra_CrsMatrix *G,
+ Epetra_CrsMatrix *R,
+ Epetra_LinearProblem *LP, Amesos_BaseSolver *solver,
+ Ifpack_Preconditioner *ifSolver, Epetra_CrsMatrix *C,
+ Epetra_Map *localDRowMap, int nvectors
+)
 {
     config_ = config;
     ssym_ = ssym;
