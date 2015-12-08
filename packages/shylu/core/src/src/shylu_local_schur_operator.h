@@ -41,6 +41,8 @@
 //@HEADER
 
 
+
+
 #ifndef SHYLU_LOCAL_SCHUR_OPERATOR_H
 #define SHYLU_LOCAL_SCHUR_OPERATOR_H
 
@@ -53,8 +55,9 @@
 #include <Epetra_Comm.h>
 #include <Teuchos_Time.hpp>
 #include <Teuchos_RCP.hpp>
-#include "shylu_util.h"
-#include "shylu.h"
+//#include "shylu_util.h"
+#include "shylu_util_decl.hpp"
+#include "shylu.hpp"
 #include <EpetraExt_Reindex_MultiVector.h>
 
 class ShyLU_Local_Schur_Operator : public virtual Epetra_Operator
@@ -64,8 +67,8 @@ class ShyLU_Local_Schur_Operator : public virtual Epetra_Operator
 
     // TODO: Change to RCPs
     ShyLU_Local_Schur_Operator(
-    shylu_config *config,
-    shylu_symbolic *ssym,   // symbolic structure
+                               shylu_config<Epetra_CrsMatrix,Epetra_MultiVector> *config,
+                               shylu_symbolic<Epetra_CrsMatrix,Epetra_MultiVector> *ssym,   // symbolic structure
     Epetra_CrsMatrix *G, Epetra_CrsMatrix *R,
     Epetra_LinearProblem *LP, Amesos_BaseSolver *solver,
     Ifpack_Preconditioner *ifSolver, Epetra_CrsMatrix *C,
@@ -118,8 +121,8 @@ class ShyLU_Local_Schur_Operator : public virtual Epetra_Operator
     Teuchos::RCP<Epetra_MultiVector> temp;
     Teuchos::RCP<Epetra_MultiVector> temp2;
     Teuchos::RCP<Epetra_MultiVector> localX;
-    shylu_symbolic *ssym_;   // symbolic structure
-    shylu_config *config_;
+    shylu_symbolic<Epetra_CrsMatrix,Epetra_MultiVector> *ssym_;   // symbolic structure
+    shylu_config<Epetra_CrsMatrix,Epetra_MultiVector> *config_;
 
 #ifdef TIMING_OUTPUT
     Teuchos::RCP<Teuchos::Time> matvec_time_;

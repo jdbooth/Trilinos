@@ -41,6 +41,7 @@
 //@HEADER
 
 
+
 #include <Epetra_Operator.h>
 #include <Epetra_CrsMatrix.h>
 #include <Epetra_LinearProblem.h>
@@ -48,12 +49,12 @@
 #include <Epetra_MultiVector.h>
 #include <Teuchos_Time.hpp>
 #include "shylu_local_schur_operator.h"
-#include "shylu_util.h"
-
+//#include "shylu_util.h"
+#include "shylu_util_decl.hpp"
 
 ShyLU_Local_Schur_Operator::ShyLU_Local_Schur_Operator(
-    shylu_config *config,
-    shylu_symbolic *ssym,   // symbolic structure
+                                                       shylu_config<Epetra_CrsMatrix,Epetra_MultiVector> *config,
+                                                       shylu_symbolic<Epetra_CrsMatrix,Epetra_MultiVector> *ssym,   // symbolic structure
     Epetra_CrsMatrix *G,
     Epetra_CrsMatrix *R,
     Epetra_LinearProblem *LP, Amesos_BaseSolver *solver,

@@ -48,8 +48,8 @@
 #include "ml_epetra_utils.h"
 
 #include "Ifpack_ConfigDefs.h"
-#include "shylu.h"
-#include "shylu_util.h"
+#include "shylu.hpp"
+#include "shylu_util_decl.hpp"
 #include "Ifpack_ShyLU.h"
 #include "Ifpack_ILUT.h"
 #include "Ifpack_ILU.h"

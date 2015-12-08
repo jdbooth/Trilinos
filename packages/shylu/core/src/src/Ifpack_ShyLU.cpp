@@ -52,13 +52,15 @@
 #include "Teuchos_Time.hpp"
 #include "Ifpack_config.h"
 
+#include "shylu_factor.hpp"
+#include "shylu_solve.hpp"
 #include <IQRSolver.h>
 
 //#define DUMP_MATRICES
 
 Ifpack_ShyLU::Ifpack_ShyLU(Epetra_CrsMatrix* A):
     A_(A),
-    IsParallel_(true),
+   IsParallel_(true),
     IsInitialized_(false),
     IsComputed_(false),
     Label_("Ifpack_ShyLU"),
@@ -214,7 +216,11 @@ int Ifpack_ShyLU::Initialize()
     else
         slu_config_.sep_type = 2;
 
-    shylu_symbolic_factor(A_, &slu_sym_, &slu_data_, &slu_config_);
+
+    shylu_symbolic_factor<Epetra_CrsMatrix,Epetra_MultiVector>
+      (A_, &slu_sym_, &slu_data_, &slu_config_);
+
+    //shylu_symbolic_factor(A_, &slu_sym_, &slu_data_, &slu_config_);
 
     if (slu_config_.schurSolver == "Amesos")
     {
@@ -249,7 +255,10 @@ int Ifpack_ShyLU::Compute()
 
     slu_data_.num_compute = NumCompute_;
 
-    shylu_factor(A_, &slu_sym_, &slu_data_, &slu_config_);
+    
+    shylu_factor<Epetra_CrsMatrix, Epetra_MultiVector>
+      (A_, &slu_sym_, &slu_data_, &slu_config_);
+    //shylu_factor(A_, &slu_sym_, &slu_data_, &slu_config_);
 
     ftime.stop();
     IsComputed_ = true;
@@ -285,8 +294,9 @@ int Ifpack_ShyLU::ApplyInverse(const Epetra_MultiVector& X,
     }
 #endif
     //cout << "Entering ApplyInvers" << endl;
-
-    shylu_solve(&slu_sym_, &slu_data_, &slu_config_, X, Y);
+    
+    //Come back for solve
+    shylu_solve<Epetra_CrsMatrix,Epetra_MultiVector>(&slu_sym_, &slu_data_, &slu_config_, X, Y);
 #ifdef DUMP_MATRICES
     if (NumApplyInverse_ == 0)
     {
