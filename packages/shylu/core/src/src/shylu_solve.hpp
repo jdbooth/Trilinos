@@ -60,7 +60,21 @@
 
 /*----------------shylu_dist_solve----------------*/
 
+template <class Matrix, class Vector>
+int shylu_dist_solve
+(
+ shylu_symbolic<Matrix,Vector> *ssym, 
+ shylu_data<Matrix,Vector> *data, 
+ shylu_config<Matrix,Vector> *config,
+ const Vector& X, 
+ Vector& Y
+)
+{
+  printf("DUMMY\n");
+  return -1;
+}
 
+/*
 template <class Matrix, class Vector>
 int shylu_dist_solve
 (
@@ -321,7 +335,7 @@ int shylu_dist_solve
   cout << "Empty" << endl;
   return -1;
 }//end shylu_dist_solve<Matrix,Vector>
-
+*/
 
 //removed static
 template <>

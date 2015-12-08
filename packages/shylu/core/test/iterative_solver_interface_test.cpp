@@ -2,7 +2,7 @@
 #include <iostream>
 #include <sstream>
 
-#include "shylu.h"
+#include "shylu.hpp"
 #include "shylu_iterativesolver_interface.hpp"
 #include "ShyLUCore_config.h"
 
@@ -55,8 +55,8 @@
 #include "ml_epetra_utils.h"
 
 #include "Ifpack_ConfigDefs.h"
-#include "shylu.h"
-#include "shylu_util.h"
+#include "shylu.hpp"
+#include "shylu_util_decl.hpp"
 #include "Ifpack_ShyLU.h"
 #include "Ifpack_ILUT.h"
 #include "Ifpack_ILU.h"
@@ -70,7 +70,7 @@
 #include "EpetraExt_CrsMatrixIn.h"
 
 //Our test interfaces
-#include "shylu.h"
+#include "shylu.hpp"
 #include "shylu_partition_interface.hpp"
 #include "shylu_directsolver_interface.hpp"
 

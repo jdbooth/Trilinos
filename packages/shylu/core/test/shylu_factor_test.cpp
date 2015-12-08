@@ -45,7 +45,7 @@
 #include "Tpetra_DefaultPlatform.hpp"
 #endif
 
-#include "shylu.h"
+#include "shylu.hpp"
 #include "shylu_util.h"
 
 #include "EpetraExt_readEpetraLinearSystem.h"
@@ -60,6 +60,10 @@ int main(int argc, char* argv[])
 #else
   Epetra_SerialComm Comm;
 #endif
+
+  typedef    Epetra_CrsMatrix     MT;
+  typedef    Epetra_MultiVector   VT;
+
 
   bool success = true;
   string pass = "End Result: TEST PASSED";
@@ -92,12 +96,13 @@ int main(int argc, char* argv[])
   //isoList.set("partitioning method", "graph");
 
   cout << "before partition" << endl;
-  Epetra_CrsMatrix *B = balanceAndRedistribute(A,isoList);
+  Epetra_CrsMatrix *B = balanceAndRedistribute<MT,VT>
+    (A,isoList);
   cout << "after partition" << endl;
 
-  shylu_data     slu_data_;
-  shylu_config   slu_config_;
-  shylu_symbolic slu_sym_;
+  shylu_data<MT,VT>     slu_data_;
+  shylu_config<MT,VT>   slu_config_;
+  shylu_symbolic<MT,VT> slu_sym_;
 
   slu_config_.sym                 = 1;     //This is
   slu_config_.libName             = "Belos"; //This is
@@ -116,7 +121,8 @@ int main(int argc, char* argv[])
   slu_config_.amesosForDiagonal   = true;
   
 
-  int serr = shylu_symbolic_factor(B, &slu_sym_, &slu_data_, &slu_config_);
+  int serr = shylu_symbolic_factor<MT, VT>
+    (B, &slu_sym_, &slu_data_, &slu_config_);
   cout << "shylu_symbolic_factor done:" << endl;
   cout << "Return value: " << serr << endl;
   if(serr == 0)

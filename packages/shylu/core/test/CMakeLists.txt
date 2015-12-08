@@ -24,11 +24,11 @@ TRIBITS_ADD_EXECUTABLE(
 	COMM serial mpi
 	)
 
-TRIBITS_ADD_EXECUTABLE_AND_TEST(
-        shylu_factor
-        SOURCES shylu_factor_test.cpp
-        COMM serial mpi
-        )
+#TRIBITS_ADD_EXECUTABLE_AND_TEST(
+#        shylu_factor
+#        SOURCES shylu_factor_test.cpp
+#        COMM serial mpi
+#        )
 
 #IF(HAVE_SHYLUCORE_TPETRA)
 #IF(${PACKAGE_NAME}_ENABLE_Tpetra)
